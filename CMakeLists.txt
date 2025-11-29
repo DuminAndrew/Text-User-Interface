@@ -55,3 +55,46 @@ target_link_libraries(log_analyzer PRIVATE Threads::Threads)
 
 # Installation
 install(TARGETS log_analyzer DESTINATION bin)
+
+# Enable testing
+enable_testing()
+
+# Fetch Google Test
+FetchContent_Declare(
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG v1.14.0
+)
+# For Windows: Prevent overriding the parent project's compiler/linker settings
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
+
+# Create a library from core components (without main.cpp)
+add_library(log_analyzer_lib
+    src/log_reader.cpp
+    src/filter_engine.cpp
+    src/syntax_highlighter.cpp
+    src/tui_display.cpp
+)
+
+target_link_libraries(log_analyzer_lib
+    PUBLIC ftxui::screen
+    PUBLIC ftxui::dom
+    PUBLIC ftxui::component
+    PUBLIC Threads::Threads
+)
+
+# Tests
+add_executable(log_analyzer_tests
+    tests/test_log_reader.cpp
+    tests/test_filter_engine.cpp
+    tests/test_syntax_highlighter.cpp
+)
+
+target_link_libraries(log_analyzer_tests
+    PRIVATE log_analyzer_lib
+    PRIVATE GTest::gtest_main
+)
+
+include(GoogleTest)
+gtest_discover_tests(log_analyzer_tests)
