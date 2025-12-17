@@ -24,7 +24,11 @@ private:
             Keyword,
             String,
             Number,
-            Special
+            Special,
+            LogLevel,      // ERROR, WARN, INFO, DEBUG
+            IPAddress,     // IP addresses
+            Protocol,      // TCP, UDP, HTTP, etc.
+            Timestamp      // Timestamps
         };
 
         Type type;
@@ -35,8 +39,13 @@ private:
     ftxui::Element tokenToElement(const Token& token);
     bool isKeyword(const std::string& word) const;
     bool isNumber(const std::string& word) const;
+    bool isLogLevel(const std::string& word) const;
+    bool isIPAddress(const std::string& word) const;
+    bool isProtocol(const std::string& word) const;
 
     std::unordered_set<std::string> sql_keywords_;
     std::unordered_set<std::string> json_keywords_;
+    std::unordered_set<std::string> log_levels_;
+    std::unordered_set<std::string> protocols_;
     bool enabled_;
 };

@@ -1,0 +1,16 @@
+[2025-11-30 14:00:00] INFO: Database connection established to server: 192.168.1.100:5432
+[2025-11-30 14:00:01] DEBUG: Executing query: SELECT * FROM users WHERE id = 123
+[2025-11-30 14:00:02] INFO: Query executed successfully in 45ms, returned 1 rows
+[2025-11-30 14:00:05] WARN: Slow query detected (2.5s): SELECT u.*, p.* FROM users u LEFT JOIN profiles p ON u.id = p.user_id WHERE u.created_at > '2025-01-01' ORDER BY u.created_at DESC LIMIT 1000
+[2025-11-30 14:00:10] ERROR: SQL syntax error: INSERT INTO orders (user_id, product_id, quantity VALUES (456, 789, 2)
+[2025-11-30 14:00:11] DEBUG: Transaction started: BEGIN TRANSACTION
+[2025-11-30 14:00:12] INFO: Executing: UPDATE inventory SET quantity = quantity - 5 WHERE product_id = 789
+[2025-11-30 14:00:13] INFO: Executing: INSERT INTO order_history (order_id, action, timestamp) VALUES (12345, 'created', NOW())
+[2025-11-30 14:00:14] INFO: Transaction completed: COMMIT
+[2025-11-30 14:00:20] CRITICAL: Deadlock detected on table 'orders' - rolling back transaction
+[2025-11-30 14:00:21] WARN: Connection pool exhausted, waiting for available connection...
+[2025-11-30 14:00:25] INFO: New connection created from pool
+[2025-11-30 14:00:30] DEBUG: Query plan: Index scan on users_email_idx (cost=0.42..8.44 rows=1)
+[2025-11-30 14:00:35] ERROR: Foreign key constraint violation: Cannot DELETE FROM users WHERE id = 999 (referenced in orders table)
+[2025-11-30 14:00:40] INFO: Database backup started
+[2025-11-30 14:01:00] SUCCESS: Backup completed successfully - 2.5GB written to /backups/db_2025-11-30.sql

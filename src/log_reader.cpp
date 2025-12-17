@@ -3,9 +3,16 @@
 #include <cstring>
 
 LogReader::LogReader()
-    : fd_(-1)
-    , mapped_data_(nullptr)
-    , file_size_(0) {
+    : mapped_data_(nullptr)
+    , file_size_(0)
+    , use_mmap_(true)
+#ifdef _WIN32
+    , file_handle_(INVALID_HANDLE_VALUE)
+    , mapping_handle_(nullptr)
+#else
+    , fd_(-1)
+#endif
+{
 }
 
 LogReader::~LogReader() {
@@ -17,7 +24,86 @@ bool LogReader::open(const std::string& filename) {
 
     filename_ = filename;
 
-    // Open file
+#ifdef _WIN32
+    // Windows implementation using CreateFileMapping
+    file_handle_ = CreateFileA(
+        filename.c_str(),
+        GENERIC_READ,
+        FILE_SHARE_READ,
+        nullptr,
+        OPEN_EXISTING,
+        FILE_ATTRIBUTE_NORMAL,
+        nullptr
+    );
+
+    if (file_handle_ == INVALID_HANDLE_VALUE) {
+        DWORD error = GetLastError();
+        std::cerr << "Failed to open file: " << filename
+                  << " (Error code: " << error << ")" << std::endl;
+        return false;
+    }
+
+    // Get file size
+    LARGE_INTEGER file_size_li;
+    if (!GetFileSizeEx(file_handle_, &file_size_li)) {
+        DWORD error = GetLastError();
+        std::cerr << "Failed to get file size (Error code: " << error << ")" << std::endl;
+        CloseHandle(file_handle_);
+        file_handle_ = INVALID_HANDLE_VALUE;
+        return false;
+    }
+
+    file_size_ = static_cast<size_t>(file_size_li.QuadPart);
+
+    // Handle empty files
+    if (file_size_ == 0) {
+        CloseHandle(file_handle_);
+        file_handle_ = INVALID_HANDLE_VALUE;
+        mapped_data_ = nullptr;
+        return true;
+    }
+
+    // Create file mapping
+    mapping_handle_ = CreateFileMappingA(
+        file_handle_,
+        nullptr,
+        PAGE_READONLY,
+        0,
+        0,
+        nullptr
+    );
+
+    if (mapping_handle_ == nullptr) {
+        DWORD error = GetLastError();
+        std::cerr << "Failed to create file mapping (Error code: " << error << ")" << std::endl;
+        CloseHandle(file_handle_);
+        file_handle_ = INVALID_HANDLE_VALUE;
+        return false;
+    }
+
+    // Map view of file
+    mapped_data_ = static_cast<char*>(
+        MapViewOfFile(
+            mapping_handle_,
+            FILE_MAP_READ,
+            0,
+            0,
+            0
+        )
+    );
+
+    if (mapped_data_ == nullptr) {
+        DWORD error = GetLastError();
+        std::cerr << "Failed to map view of file (Error code: " << error << ")" << std::endl;
+        CloseHandle(mapping_handle_);
+        CloseHandle(file_handle_);
+        mapping_handle_ = nullptr;
+        file_handle_ = INVALID_HANDLE_VALUE;
+        return false;
+    }
+
+#else
+    // Linux implementation using mmap
     fd_ = ::open(filename.c_str(), O_RDONLY);
     if (fd_ == -1) {
         std::cerr << "Failed to open file: " << filename << std::endl;
@@ -58,6 +144,7 @@ bool LogReader::open(const std::string& filename) {
 
     // Advise kernel about access pattern
     madvise(mapped_data_, file_size_, MADV_SEQUENTIAL);
+#endif
 
     // Index all lines
     indexLines();
@@ -66,6 +153,22 @@ bool LogReader::open(const std::string& filename) {
 }
 
 void LogReader::close() {
+#ifdef _WIN32
+    if (mapped_data_ != nullptr) {
+        UnmapViewOfFile(mapped_data_);
+        mapped_data_ = nullptr;
+    }
+
+    if (mapping_handle_ != nullptr) {
+        CloseHandle(mapping_handle_);
+        mapping_handle_ = nullptr;
+    }
+
+    if (file_handle_ != INVALID_HANDLE_VALUE) {
+        CloseHandle(file_handle_);
+        file_handle_ = INVALID_HANDLE_VALUE;
+    }
+#else
     if (mapped_data_ != nullptr && mapped_data_ != MAP_FAILED) {
         munmap(mapped_data_, file_size_);
         mapped_data_ = nullptr;
@@ -75,6 +178,7 @@ void LogReader::close() {
         ::close(fd_);
         fd_ = -1;
     }
+#endif
 
     file_size_ = 0;
     line_offsets_.clear();
@@ -120,6 +224,11 @@ std::string_view LogReader::getLine(size_t index) const {
 
     // Handle trailing newline
     if (end > start && mapped_data_[end - 1] == '\n') {
+        end--;
+    }
+
+    // Handle carriage return (Windows line endings \r\n)
+    if (end > start && mapped_data_[end - 1] == '\r') {
         end--;
     }
 

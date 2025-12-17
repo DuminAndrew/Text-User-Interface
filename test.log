@@ -1,50 +1,20 @@
-2025-01-27 10:00:01 INFO Application started successfully
-2025-01-27 10:00:02 DEBUG Connecting to database at 192.168.1.100:5432
-2025-01-27 10:00:03 INFO SELECT * FROM users WHERE id = 42 AND status = 'active'
-2025-01-27 10:00:04 ERROR Connection timeout to database 192.168.1.100
-2025-01-27 10:00:05 INFO Retrying connection attempt 1/3
-2025-01-27 10:00:06 INFO {"status": "ok", "users": 150, "active": true, "response_time": 45}
-2025-01-27 10:00:07 WARN High memory usage detected: 85%
-2025-01-27 10:00:08 INFO INSERT INTO logs (timestamp, message, level) VALUES ('2025-01-27 10:00:08', 'test', 'INFO')
-2025-01-27 10:00:09 ERROR Failed to INSERT: null constraint violation on column 'user_id'
-2025-01-27 10:00:10 INFO Database connection established
-2025-01-27 10:00:11 DEBUG Query executed in 123ms
-2025-01-27 10:00:12 INFO {"request": "GET /api/users", "status": 200, "duration": 234, "user_agent": "Mozilla/5.0"}
-2025-01-27 10:00:13 INFO UPDATE users SET last_login = NOW() WHERE id = 42
-2025-01-27 10:00:14 ERROR HTTP 500 Internal Server Error at /api/profile
-2025-01-27 10:00:15 INFO Request from IP: 203.0.113.45
-2025-01-27 10:00:16 DEBUG SELECT COUNT(*) FROM sessions WHERE expires > NOW()
-2025-01-27 10:00:17 WARN Rate limit exceeded for user 42
-2025-01-27 10:00:18 INFO {"event": "user_login", "user_id": 42, "ip": "203.0.113.45", "success": true}
-2025-01-27 10:00:19 INFO Cache hit rate: 95.5%
-2025-01-27 10:00:20 ERROR Authentication failed for user: admin
-2025-01-27 10:00:21 INFO DELETE FROM temp_sessions WHERE expires < NOW()
-2025-01-27 10:00:22 DEBUG Processing job queue: 12 items remaining
-2025-01-27 10:00:23 INFO {"metric": "response_time", "value": 156, "unit": "ms", "endpoint": "/api/data"}
-2025-01-27 10:00:24 WARN Disk space low: 15% remaining
-2025-01-27 10:00:25 INFO SELECT name, email FROM users WHERE created > '2025-01-01' ORDER BY created DESC LIMIT 100
-2025-01-27 10:00:26 ERROR Failed to connect to external API: timeout after 30s
-2025-01-27 10:00:27 INFO Backup completed successfully: 1.2GB
-2025-01-27 10:00:28 DEBUG {"debug": "memory_stats", "heap_used": 524288000, "heap_total": 1073741824}
-2025-01-27 10:00:29 INFO CREATE INDEX idx_users_email ON users(email)
-2025-01-27 10:00:30 ERROR SQL syntax error near 'FORM' in query
-2025-01-27 10:00:31 INFO Session cleanup: removed 45 expired sessions
-2025-01-27 10:00:32 WARN CPU usage spike detected: 92%
-2025-01-27 10:00:33 INFO {"request": "POST /api/auth/login", "status": 401, "duration": 89}
-2025-01-27 10:00:34 INFO ALTER TABLE users ADD COLUMN phone VARCHAR(20)
-2025-01-27 10:00:35 ERROR File not found: /var/log/archive/2025-01-26.log
-2025-01-27 10:00:36 INFO Request completed: 200 OK
-2025-01-27 10:00:37 DEBUG {"trace": "function_call", "function": "getUserData", "args": [42], "duration": 12}
-2025-01-27 10:00:38 INFO TRUNCATE TABLE audit_logs
-2025-01-27 10:00:39 WARN Connection pool exhausted: 100/100 connections in use
-2025-01-27 10:00:40 INFO {"health_check": "passed", "services": {"database": true, "cache": true, "storage": true}}
-2025-01-27 10:00:41 ERROR Unhandled exception: NullPointerException at line 142
-2025-01-27 10:00:42 INFO Background job completed in 15.3s
-2025-01-27 10:00:43 INFO SELECT u.name, o.total FROM users u JOIN orders o ON u.id = o.user_id WHERE o.status = 'completed'
-2025-01-27 10:00:44 DEBUG Cache miss for key: user:42:profile
-2025-01-27 10:00:45 INFO {"notification": "sent", "type": "email", "recipient": "user@example.com", "success": true}
-2025-01-27 10:00:46 WARN Slow query detected: 2.5s execution time
-2025-01-27 10:00:47 INFO DROP INDEX idx_old_column
-2025-01-27 10:00:48 ERROR Redis connection lost, attempting reconnect
-2025-01-27 10:00:49 INFO Application shutdown initiated
-2025-01-27 10:00:50 INFO Closing all database connections
+[2025-11-30 10:00:00] INFO: Application started successfully
+[2025-11-30 10:00:01] DEBUG: Initializing database connection
+[2025-11-30 10:00:02] INFO: Database connected to server: db.example.com:5432
+[2025-11-30 10:00:03] WARN: Configuration file missing, using defaults
+[2025-11-30 10:00:04] ERROR: Failed to load plugin: analytics.dll
+[2025-11-30 10:00:05] INFO: Starting HTTP server on port 8080
+[2025-11-30 10:00:06] INFO: Server is ready to accept connections
+[2025-11-30 10:00:10] DEBUG: Received request GET /api/users
+[2025-11-30 10:00:11] INFO: Request processed successfully in 45ms
+[2025-11-30 10:00:15] ERROR: Database query timeout after 30s
+[2025-11-30 10:00:16] WARN: Retrying database connection (attempt 1/3)
+[2025-11-30 10:00:20] INFO: Database reconnected successfully
+[2025-11-30 10:00:25] DEBUG: Cache hit rate: 87.5%
+[2025-11-30 10:00:30] INFO: System health check: OK
+[2025-11-30 10:00:35] CRITICAL: Out of memory! Available: 128MB, Required: 2GB
+[2025-11-30 10:00:36] ERROR: Application crash detected
+[2025-11-30 10:00:37] INFO: Initiating graceful shutdown
+[2025-11-30 10:00:38] INFO: Closing database connections
+[2025-11-30 10:00:39] INFO: Stopping HTTP server
+[2025-11-30 10:00:40] INFO: Application terminated

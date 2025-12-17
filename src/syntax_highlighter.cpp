@@ -8,7 +8,7 @@ using namespace ftxui;
 SyntaxHighlighter::SyntaxHighlighter()
     : enabled_(true) {
 
-    // SQL Keywords
+    // SQL Keywords (расширенный список)
     sql_keywords_ = {
         "SELECT", "FROM", "WHERE", "INSERT", "UPDATE", "DELETE",
         "CREATE", "DROP", "ALTER", "TABLE", "INDEX", "VIEW",
@@ -16,12 +16,36 @@ SyntaxHighlighter::SyntaxHighlighter()
         "AND", "OR", "NOT", "IN", "LIKE", "BETWEEN",
         "ORDER", "BY", "GROUP", "HAVING", "LIMIT", "OFFSET",
         "AS", "DISTINCT", "COUNT", "SUM", "AVG", "MAX", "MIN",
-        "NULL", "TRUE", "FALSE", "IS", "EXISTS"
+        "NULL", "TRUE", "FALSE", "IS", "EXISTS",
+        // Дополнительные SQL ключевые слова
+        "BEGIN", "COMMIT", "ROLLBACK", "TRANSACTION",
+        "PRIMARY", "KEY", "FOREIGN", "REFERENCES", "CONSTRAINT",
+        "UNIQUE", "CHECK", "DEFAULT", "AUTO_INCREMENT",
+        "VARCHAR", "INT", "INTEGER", "TEXT", "BLOB", "DATE", "DATETIME",
+        "CASE", "WHEN", "THEN", "ELSE", "END",
+        "UNION", "ALL", "INTERSECT", "EXCEPT",
+        "GRANT", "REVOKE", "WITH", "USING"
     };
 
     // JSON Keywords
     json_keywords_ = {
         "true", "false", "null"
+    };
+
+    // Log Levels
+    log_levels_ = {
+        "ERROR", "FATAL", "CRITICAL", "CRIT",
+        "WARN", "WARNING",
+        "INFO", "INFORMATION",
+        "DEBUG", "TRACE",
+        "SUCCESS", "OK"
+    };
+
+    // Network Protocols (для Wireshark)
+    protocols_ = {
+        "TCP", "UDP", "HTTP", "HTTPS", "FTP", "SSH", "DNS", "DHCP",
+        "SMTP", "POP3", "IMAP", "TLS", "SSL", "ICMP", "ARP",
+        "IPv4", "IPv6", "ETHERNET", "WEBSOCKET", "MQTT", "AMQP"
     };
 }
 
@@ -113,13 +137,21 @@ std::vector<SyntaxHighlighter::Token> SyntaxHighlighter::tokenize(std::string_vi
         flush_current(Token::Type::Normal);
     }
 
-    // Post-process to identify keywords and numbers
+    // Post-process to identify keywords, numbers, log levels, etc.
     for (auto& token : tokens) {
         if (token.type == Token::Type::Normal) {
             std::string upper = token.text;
             std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
 
-            if (isKeyword(token.text)) {
+            if (isLogLevel(upper)) {
+                token.type = Token::Type::LogLevel;
+                token.text = upper;  // Нормализуем к верхнему регистру
+            } else if (isProtocol(upper)) {
+                token.type = Token::Type::Protocol;
+                token.text = upper;
+            } else if (isIPAddress(token.text)) {
+                token.type = Token::Type::IPAddress;
+            } else if (isKeyword(token.text)) {
                 token.type = Token::Type::Keyword;
             } else if (isNumber(token.text)) {
                 token.type = Token::Type::Number;
@@ -140,6 +172,26 @@ ftxui::Element SyntaxHighlighter::tokenToElement(const Token& token) {
             return text(token.text) | color(Color::Magenta);
         case Token::Type::Special:
             return text(token.text) | color(Color::Yellow);
+        case Token::Type::LogLevel:
+            // Разные цвета для разных уровней логирования
+            if (token.text == "ERROR" || token.text == "FATAL" || token.text == "CRITICAL" || token.text == "CRIT") {
+                return text(token.text) | color(Color::Red) | bold;
+            } else if (token.text == "WARN" || token.text == "WARNING") {
+                return text(token.text) | color(Color::Yellow) | bold;
+            } else if (token.text == "INFO" || token.text == "INFORMATION") {
+                return text(token.text) | color(Color::Blue) | bold;
+            } else if (token.text == "DEBUG" || token.text == "TRACE") {
+                return text(token.text) | color(Color::GrayLight);
+            } else if (token.text == "SUCCESS" || token.text == "OK") {
+                return text(token.text) | color(Color::Green) | bold;
+            }
+            return text(token.text) | color(Color::White);
+        case Token::Type::IPAddress:
+            return text(token.text) | color(Color::CyanLight);
+        case Token::Type::Protocol:
+            return text(token.text) | color(Color::Magenta) | bold;
+        case Token::Type::Timestamp:
+            return text(token.text) | color(Color::GrayLight);
         case Token::Type::Normal:
         default:
             return text(token.text);
@@ -175,4 +227,46 @@ bool SyntaxHighlighter::isNumber(const std::string& word) const {
     }
 
     return has_digit;
+}
+
+bool SyntaxHighlighter::isLogLevel(const std::string& word) const {
+    return log_levels_.count(word) > 0;
+}
+
+bool SyntaxHighlighter::isProtocol(const std::string& word) const {
+    return protocols_.count(word) > 0;
+}
+
+bool SyntaxHighlighter::isIPAddress(const std::string& word) const {
+    // Простая проверка IPv4 адреса (xxx.xxx.xxx.xxx)
+    if (word.empty()) return false;
+
+    int dots = 0;
+    int digits_in_group = 0;
+    int current_value = 0;
+
+    for (char c : word) {
+        if (std::isdigit(c)) {
+            current_value = current_value * 10 + (c - '0');
+            digits_in_group++;
+            if (current_value > 255 || digits_in_group > 3) {
+                return false;
+            }
+        } else if (c == '.') {
+            if (digits_in_group == 0 || digits_in_group > 3) {
+                return false;
+            }
+            dots++;
+            digits_in_group = 0;
+            current_value = 0;
+        } else if (c == ':') {
+            // Может быть IPv6 или порт - считаем валидным
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    // IPv4: должно быть ровно 3 точки и последняя группа должна содержать цифры
+    return (dots == 3 && digits_in_group > 0 && digits_in_group <= 3);
 }

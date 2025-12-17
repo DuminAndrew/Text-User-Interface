@@ -58,6 +58,7 @@ private:
     std::mutex visible_lines_mutex_;
     std::atomic<bool> filter_in_progress_;
     std::atomic<bool> should_exit_;
+    std::atomic<uint64_t> filter_generation_;  // Track filter version to cancel old filters
 
     // Screen
     ftxui::ScreenInteractive screen_;

@@ -20,6 +20,7 @@ TuiDisplay::TuiDisplay(std::shared_ptr<LogReader> reader,
     , case_sensitive_(false)
     , filter_in_progress_(false)
     , should_exit_(false)
+    , filter_generation_(0)
     , screen_(ScreenInteractive::Fullscreen()) {
 
     // Initialize with all lines visible
@@ -251,13 +252,14 @@ void TuiDisplay::updateVisibleLines() {
 }
 
 void TuiDisplay::applyFilterAsync() {
-    if (filter_in_progress_) {
-        return;  // Already filtering
-    }
-
     std::string pattern = filter_input_;
 
+    // Increment generation to cancel any ongoing filtering
+    uint64_t current_generation = ++filter_generation_;
+
+    // If pattern is empty, reset to show all lines
     if (pattern.empty()) {
+        filter_in_progress_ = false;
         updateVisibleLines();
         return;
     }
@@ -265,33 +267,53 @@ void TuiDisplay::applyFilterAsync() {
     filter_in_progress_ = true;
 
     // Launch async filter
-    std::thread([this, pattern]() {
+    std::thread([this, pattern, current_generation]() {
         // Set pattern
         if (!filter_->setPattern(pattern)) {
-            status_message_ = "Invalid regex: " + filter_->getError();
-            filter_in_progress_ = false;
+            // Only update if this filter is still current
+            if (filter_generation_ == current_generation) {
+                status_message_ = "Invalid regex: " + filter_->getError();
+                filter_in_progress_ = false;
+            }
             return;
         }
 
-        // Get all lines
-        auto all_lines = reader_->getLines(0, reader_->getLineCount());
+        // Process lines in chunks to allow cancellation
+        const size_t CHUNK_SIZE = 10000;
+        size_t total_lines = reader_->getLineCount();
+        std::vector<size_t> matching_indices;
+        matching_indices.reserve(total_lines / 10);  // Estimate
 
-        // Filter
-        auto matching_indices = filter_->filter(all_lines);
+        for (size_t chunk_start = 0; chunk_start < total_lines; chunk_start += CHUNK_SIZE) {
+            // Check if this filter was cancelled
+            if (filter_generation_ != current_generation) {
+                return;  // This filter is obsolete, exit silently
+            }
 
-        // Update visible lines
-        {
-            std::lock_guard<std::mutex> lock(visible_lines_mutex_);
-            visible_line_indices_ = matching_indices;
-            scroll_position_ = 0;
-            selected_line_ = 0;
+            size_t chunk_end = std::min(chunk_start + CHUNK_SIZE, total_lines);
+
+            // Process chunk
+            for (size_t i = chunk_start; i < chunk_end; ++i) {
+                auto line = reader_->getLine(i);
+                if (filter_->matches(line)) {
+                    matching_indices.push_back(i);
+                }
+            }
         }
 
-        std::stringstream ss;
-        ss << "Found " << matching_indices.size() << " matching lines";
-        status_message_ = ss.str();
+        // Update visible lines only if this filter is still current
+        if (filter_generation_ == current_generation) {
+            std::lock_guard<std::mutex> lock(visible_lines_mutex_);
+            visible_line_indices_ = std::move(matching_indices);
+            scroll_position_ = 0;
+            selected_line_ = 0;
 
-        filter_in_progress_ = false;
+            std::stringstream ss;
+            ss << "Found " << visible_line_indices_.size() << " matching lines";
+            status_message_ = ss.str();
+
+            filter_in_progress_ = false;
+        }
     }).detach();
 }
 

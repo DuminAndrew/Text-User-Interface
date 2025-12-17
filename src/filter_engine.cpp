@@ -39,6 +39,21 @@ void FilterEngine::clearPattern() {
     error_message_.clear();
 }
 
+bool FilterEngine::matches(std::string_view line) const {
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    if (!has_valid_pattern_) {
+        return true;  // No filter means all lines match
+    }
+
+    try {
+        std::string line_str(line);
+        return std::regex_search(line_str, regex_);
+    } catch (const std::regex_error&) {
+        return false;
+    }
+}
+
 std::vector<size_t> FilterEngine::filter(const std::vector<std::string_view>& lines) {
     return filterImpl(lines);
 }

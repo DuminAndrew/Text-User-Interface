@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(curl:*)",
+      "Bash(unzip:*)",
+      "Bash(rm:*)",
+      "Bash(export PATH=\"$HOME/bin:$PATH\")",
+      "Bash(cmake:*)",
+      "Bash(g++:*)",
+      "Bash(ninja:*)",
+      "Bash(cl:*)",
+      "Bash(where:*)",
+      "Bash(\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Auxiliary\\Build\\vcvars64.bat\")",
+      "Bash(pacman -Q:*)",
+      "Bash(cmd //c '\"\"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\Common7\\Tools\\VsDevCmd.bat\"\" && cd build && cmake -G \"\"Ninja\"\" .. && ninja')",
+      "Bash(cmd //c build.bat)",
+      "Bash(cmd //c \"c:\\Users\\Quant\\Documents\\GitHub\\Text-User-Interface\\build.bat\")",
+      "Bash(./build/log_analyzer.exe:*)",
+      "Bash(./log_analyzer_tests.exe:*)",
+      "Bash(cmd //c \"if exist e:\\logs\\test.log (echo File exists) else (echo File does NOT exist)\")",
+      "Bash(cmd //c:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -38,6 +38,9 @@ public:
     // Clear pattern (show all lines)
     void clearPattern();
 
+    // Check if a single line matches the current pattern
+    bool matches(std::string_view line) const;
+
 private:
     std::vector<size_t> filterImpl(const std::vector<std::string_view>& lines);
 

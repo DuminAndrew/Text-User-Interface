@@ -5,9 +5,23 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Compiler optimizations
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -O3 -march=native")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -march=native")
+# === КРОССПЛАТФОРМЕННАЯ ОПТИМИЗАЦИЯ ===
+# Настройки компиляции для разных платформ
+if(MSVC)
+    # Флаги для Microsoft Visual C++
+    add_compile_options(/W4 /utf-8)
+    # /W4 - высокий уровень предупреждений
+    # /utf-8 - корректная работа с UTF-8
+    # Используем RelWithDebInfo по умолчанию для оптимизации с отладочной информацией
+    if(NOT CMAKE_BUILD_TYPE)
+        set(CMAKE_BUILD_TYPE RelWithDebInfo)
+    endif()
+else()
+    # Флаги для GCC/Clang (Linux/macOS)
+    add_compile_options(-Wall -Wextra -O3 -march=native)
+    # -O3: максимальная оптимизация
+    # -march=native: использовать все инструкции процессора (AVX и т.д.)
+endif()
 
 # Include FetchContent for external dependencies
 include(FetchContent)
@@ -49,7 +63,7 @@ target_link_libraries(log_analyzer
     PRIVATE ftxui::component
 )
 
-# Threading support
+# Threading support (Обязательно для Linux)
 find_package(Threads REQUIRED)
 target_link_libraries(log_analyzer PRIVATE Threads::Threads)
 
@@ -65,8 +79,12 @@ FetchContent_Declare(
     GIT_REPOSITORY https://github.com/google/googletest.git
     GIT_TAG v1.14.0
 )
-# For Windows: Prevent overriding the parent project's compiler/linker settings
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+
+# Force GoogleTest to use shared runtime library on Windows (same as our project)
+if(MSVC)
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+endif()
+
 FetchContent_MakeAvailable(googletest)
 
 # Create a library from core components (without main.cpp)
